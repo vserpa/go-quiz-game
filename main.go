@@ -21,18 +21,7 @@ type Question struct {
 }
 
 func (g *GameState) Init() {
-	fmt.Println("Initializing game state...")
-	fmt.Println("Enter your name: ")
-	reader := bufio.NewReader(os.Stdin)
-
-	name, err := reader.ReadString('\n') // read until newline (enter)
-
-	if err != nil {
-		fmt.Println("Error reading name:", err)
-		return
-	}
-
-	g.PlayerName = name[:len(name)-1] // remove newline character
+	g.PlayerName = getUserEntry("Enter your name: ")
 
 	fmt.Printf("Welcome, %s! Let's start the quiz.\n", g.PlayerName)
 }
@@ -65,10 +54,43 @@ func (g *GameState) LoadGameData() {
 	}
 }
 
+func (g *GameState) PlayQuiz() {
+	for i, question := range g.Questions {
+		fmt.Printf("\033[33m %d. %s \033[0m\n", i+1, question.Text)
+
+		for j, option := range question.Options {
+			fmt.Printf("[%d]. %s\n", j+1, option)
+		}
+
+		for {
+			answer := toInt(getUserEntry("Type your answer:  "))
+
+			if answer < 1 || answer > len(question.Options) {
+				fmt.Println("Invalid answer. Please try again.")
+				continue
+			}
+
+			if answer == question.Answer {
+				g.Score += 10
+				fmt.Printf("\033[32mCorrect!\033[0m\n")
+			} else {
+				fmt.Printf("\033[31mWrong!\033[0m\n")
+			}
+
+			fmt.Printf("------------------------- \n")
+			break
+		}
+	}
+}
+
 func main() {
 	game := GameState{}
-	go game.LoadGameData()
+	game.LoadGameData()
 	game.Init()
+	game.PlayQuiz()
+
+	fmt.Println("Game Over!!!")
+	fmt.Printf("Your final score: %d\n", game.Score)
 }
 
 func toInt(s string) int {
@@ -78,4 +100,16 @@ func toInt(s string) int {
 		return 0
 	}
 	return i
+}
+
+func getUserEntry(title string) string {
+	fmt.Println(title)
+	reader := bufio.NewReader(os.Stdin)
+
+	value, err := reader.ReadString('\n') // read until newline (enter)
+	if err != nil {
+		panic("Error reading user entry")
+	}
+
+	return value[:len(value)-1] // remove newline character
 }
